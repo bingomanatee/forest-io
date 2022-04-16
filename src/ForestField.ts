@@ -26,7 +26,7 @@ class ForestField extends Leaf {
       },
       {
         setters: true,
-        res: { initialValue: value },
+        res: { initialValue: value, part: 'field' },
         selectors: {
           initialValue(_v, leaf) {
             return leaf.res('initialValue');

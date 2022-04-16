@@ -34,6 +34,7 @@ each fields' value includes the following values:
 
 * **value**: the current fields' value
 * **locked**: (boolean) whether the field has been locked
+* **touched**: (boolean) whether the field's value has _ever_ been changed from its initial value
 * **show**: (boolean) a UX utility for showing / hiding the form element; true by default
 * **form**: (Form) a reference to its parent form
 * **$initialValue**: the value of the field when created
@@ -50,6 +51,7 @@ Fields have the following actions:
 * **updateWithEvent(event)**: set the next field value to event.target.value; useful for form / input UX
 * **setLocked(boolean)**: selectively locks the field.
 * **setShow(boolean)**: updates the show value of the field.
+* **reset(toValue?)**: resets touched; if toValue is passed, sets the fields' value to it; otherwise uses the initial value
 
 ## Form
 
@@ -73,10 +75,27 @@ const form = new Form('greeks', {
 Form values have the following fields: 
 
 * **fields**: an object containing the name/value pairs for each field
+* **$status**: reflects whether the form has been submitted; 
+  can be one of the following:  'form:editing', 'form:submitting', 'form:saved', 'form:error';
 * **$isValid**: (boolean) whether any errors have been returned by the validator function; true if no validator function
 * **$error**: (var) any error returned/thrown from the validator function; falsy if no validator exists.
 * **$errorMessage**: (string | other) attempts to "unpack" the message field of $error if possible.
 * **$isLocked**: if the form has been locked.
+* **$summary**: a digest of the fields' values in object form. 
+
+Forms have the following actions:
+
+* **submit()**: sends the $summary through to the onSubmit handler; updates status, and returns a promise reflecting submission status.
+  If you call this method without any onSubmit function being set, the form will be locked permanantly in the FORM_SUBMITTING
+  state, and the form fields will be locked; it will be up to you to interpret and adjust the status. 
+* **setLocked(boolean)**: locks all fields from being changed. Locking happens automatically when the submit() promise is active. 
+* **reset()**: sets all fields' values to their initial value;
+* **updateField(name, value)**: a passthrough to a fields' update;
+* **update({name: value,....")**: update multiple fields at once.
+* **field(name)**: returns the field (or form) Leaf from the fields branch.
+* **addField(name, value, validator = undefined, def = {})**: adds a field to the Form definition. 
+* **remField(name)**: removes a field from the fields branch.
+* **addSubForm(name, fields, onSubmit = null, validate = null)**: adds a form to the fields' collection.
 
 ### pairing field I/0 with a form: 
 
@@ -91,11 +110,11 @@ these actions/values in a general pattern.
 
 ```jsx
 const BranchInput = ({branch}) => (
-      <div> 
-        <label>{branch.name}</label>
-        <input type="text" value={branch.value.value}
-               onChange={ branch.do.updateFromEvent} />
-      </div>
+  <div> 
+    <label>{branch.name}</label>
+    <input type="text" value={branch.value.value}
+           onChange={ branch.do.updateFromEvent} />
+  </div>
 )
 
 const MyComponent = ({form}) => (
@@ -106,3 +125,39 @@ const MyComponent = ({form}) => (
 )
 
 ```
+
+## Adding Sub-forms 
+
+Forms can be nested in the fields' collection; this is useful to represent a wizard or a nested data structure,
+in which the parent form is composed of sub-values. 
+
+This requires post-constructor modification of the form. 
+
+```javascript
+
+  const wizard = new Form('wizard', { name: { value: 'foo' } });
+  wizard.do.addSubForm('address', {
+    city: { value: '' },
+    state: { value: '' },
+  });
+  wizard.do.addSubForm('contact', {
+    email: {
+      value: '',
+      validator: value => {
+        if (typeof value !== 'string') {
+          return 'value must be a string';
+        }
+        if (!/.+@.+\..+/.test(value)) {
+          return 'not a proper email';
+        }
+        return false;
+      },
+    },
+    phone: { value: '' },
+  });
+
+```
+
+The implication of "submitting" a sub-form is ambiguous; other than locking the fields of the form, it doesn't trigger 
+the onSubmit() of the parent form or affect the parent forms' status in any other way. Its advised not to call 
+sub-forms' `do.submit()` method at all. 

@@ -12,6 +12,30 @@ const isNonEnptyString = value => {
     : 'must be nonempty string';
 };
 
+function makeWizard() {
+  const wizard = new Form('wizard', { name: { value: 'foo' } });
+  wizard.do.addSubForm('address', {
+    city: { value: '' },
+    state: { value: '' },
+  });
+  wizard.do.addSubForm('contact', {
+    email: {
+      value: '',
+      validator: value => {
+        if (typeof value !== 'string') {
+          return 'value must be a string';
+        }
+        if (!/.+@.+\..+/.test(value)) {
+          return 'not a proper email';
+        }
+        return false;
+      },
+    },
+    phone: { value: '' },
+  });
+  return wizard;
+}
+
 describe('ForestIO', () => {
   describe('Form', () => {
     it('should have fields', () => {
@@ -94,6 +118,61 @@ describe('ForestIO', () => {
           form.branch('fields.beta').do.update('Bob');
           expect(form.valueWithSelectors().$isValid).toBeFalsy();
         });
+      });
+    });
+
+    describe('nested forms', () => {
+      it('should express sub-forms as a value', () => {
+        const wizard = makeWizard();
+
+        expect(wizard.valueWithSelectors().$summary).toEqual({
+          address: {
+            city: '',
+            state: '',
+          },
+          contact: {
+            email: '',
+            phone: '',
+          },
+          name: 'foo',
+        });
+      });
+
+      it('should allow you tu update values by key', () => {
+        const wizard = makeWizard();
+
+        wizard.do.update({
+          contact: {
+            email: 'a@b.com',
+            phone: '999-123-4567',
+          },
+        });
+
+        expect(wizard.valueWithSelectors().$summary).toEqual({
+          address: {
+            city: '',
+            state: '',
+          },
+          contact: {
+            email: 'a@b.com',
+            phone: '999-123-4567',
+          },
+          name: 'foo',
+        });
+      });
+
+      it('shares the validation of sub-forms', () => {
+        const wizard = makeWizard();
+
+        expect(wizard.valueWithSelectors().$isValid).toBeFalsy();
+        wizard.do.update({
+          contact: {
+            email: 'a@b.com',
+            phone: '999-123-4567',
+          },
+        });
+
+        expect(wizard.valueWithSelectors().$isValid).toBeTruthy();
       });
     });
   });
