@@ -1,4 +1,5 @@
-This is an ORM object based on the @wonderlandlabs/forest state management system. It is analogous to Formik; notable
+This is an ORM object based on the [@wonderlandlabs/forest](https://www.npmjs.com/package/@wonderlandlabs/forest) 
+state management system. It is analogous to Formik; notable
 differences are that functionality and validation are distributed to the field objects themselves, and the functionality
 and rendering are not bound in the same solution set.
 
