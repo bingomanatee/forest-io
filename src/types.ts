@@ -1,14 +1,17 @@
 export type FieldDef = {
   name?: string;
-  value?: any;
+  value: any;
   validator?: (value, target?) => any;
-  options?: { optional: boolean | null };
+  options?: any[];
+  data?: any;
 };
+
 export type FieldValue = {
   name: string;
   value: any;
   $isValid: boolean;
   $error: any;
+  options?: any[];
 };
 
 type SendUrlObject = { [key: string]: string };

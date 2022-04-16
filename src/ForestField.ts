@@ -1,52 +1,59 @@
 import { e, Leaf } from '@wonderlandlabs/forest';
 import lGet from 'lodash/get';
-import { ABSENT, NOOP } from './utils';
+import { ABSENT, errMessage, NOOP, resultOrThrown } from './utils';
 
 class ForestField extends Leaf {
   constructor(
     name,
     value: any = '',
     validator: (value?, target?) => any = NOOP,
-    options: { optional: boolean | null } = { optional: false }
+    data: { [key: string]: any } = {},
+    form = null
   ) {
-    const { optional } = options;
-
     function validate(value, target) {
-      try {
-        return validator(value, target);
-      } catch (err) {
-        return false;
-      }
+      return resultOrThrown(() => validator(value, target));
     }
 
     super(
       {
         name,
-        value: value,
+        value,
         touched: false,
-        optional,
+        data,
+        form,
+        locked: false,
+        show: true,
       },
       {
+        setters: true,
+        res: { initialValue: value },
         selectors: {
-          isValid({ value, touched, optional }, leaf) {
-            if (!touched) {
-              if (optional === true) {
-                return true; // if untouched -- ASSUMES the value is absent and therefore true
-              }
-              if (optional === false) {
-                return false; // if untouched AND not optional ASSUMES value must be TRUE
-              }
-            }
-
+          initialValue(_v, leaf) {
+            return leaf.res('initialValue');
+          },
+          isLocked({ locked, form }) {
+            if (locked) return true;
+            if (form && form.valueWithSelectors().$isLocked) return true;
+            return false;
+          },
+          isValid({ value }, leaf) {
+            return !validate(value, leaf);
+          },
+          error({ value }, leaf) {
             return validate(value, leaf);
+          },
+          errorMessage({ value }, leaf) {
+            const err = validate(value, leaf);
+            if (!err) return '';
+            return errMessage(err);
           },
         },
         actions: {
-          revert(leaf, revertValue = ABSENT) {
+          reset(leaf, revertValue = ABSENT) {
             if (revertValue === ABSENT) {
               leaf.do.setValue(value);
             } else {
-              leaf.do.setValue(revertValue);
+              leaf.do.setValue(leaf.value.initialValue);
             }
             leaf.do.setTouched(false);
           },
@@ -61,6 +68,11 @@ class ForestField extends Leaf {
             leaf.do.update(value);
           },
           update(leaf, value) {
+            const { form, locked } = leaf.value;
+            if (locked || (form && form.valueWithSelectors().$isLocked)) {
+              console.warn('attempt to update locked field');
+              return;
+            }
             if (value === leaf.value.value) return;
             leaf.do.setValue(value);
             leaf.do.setTouched(true);

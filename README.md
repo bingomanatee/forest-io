@@ -1,103 +1,108 @@
-# TSDX User Guide
+This is an ORM object based on the @wonderlandlabs/forest state management system. It is analogous to Formik; notable
+differences are that functionality and validation are distributed to the field objects themselves, and the functionality
+and rendering are not bound in the same solution set.
 
-Congrats! You just saved yourself hours of work by bootstrapping this project with TSDX. Let’s get you oriented with what’s here and how to use it.
+Its based on @wonderlandlabs/forest, the general purpose state system.
 
-> This TSDX setup is meant for developing libraries (not apps!) that can be published to NPM. If you’re looking to build a Node app, you could use `ts-node-dev`, plain `ts-node`, or simple `tsc`.
+## From the bottom up: Forest-io fields
 
-> If you’re new to TypeScript, checkout [this handy cheatsheet](https://devhints.io/typescript)
+Forest-io forms are based on a series of field definitions. Each field is defined with the following properties:
 
-## Commands
+* **name**: the name of the field
+* **value**: the initial value of the field
+* **validator**: an optional function to return/throw errors on invalid values
+* **data**: an optional object with any other values (title, selector options, etc.)
+  that you want to attach to fields; for example, display label, etc.
 
-TSDX scaffolds your new library inside `/src`.
+### Validators in depth
 
-To run TSDX, use:
+A validator function indicates a value is "valid" by returning a falsy value (undefined, null, etc.); A validator can
+indicate falsiness by either throwing an error or returning a string.
 
-```bash
-npm start # or yarn start
+Validator functions are passed `(value, fieldLeaf]`.
+
+Validators are optional.
+
+Validators do not BLOCK the change of a fields' value; they only affect the validation indicators (below)
+that describe the valid state of the field.
+
+### Fields' values
+
+A fields value is (way way) more data than the actual input value
+
+each fields' value includes the following values:
+
+* **value**: the current fields' value
+* **locked**: (boolean) whether the field has been locked
+* **show**: (boolean) a UX utility for showing / hiding the form element; true by default
+* **form**: (Form) a reference to its parent form
+* **$initialValue**: the value of the field when created
+* **$isValid**: (boolean) whether any errors have been returned by the validator function; true if no validator function
+* **$error**: (var) any error returned/thrown from the validator function; falsy if no validator exists.
+* **$errorMessage**: (string | other) attempts to "unpack" the message field of $error if possible.
+* **$isLocked**: either the field _or its form_ has been locked.
+
+also, fields' name property is set from the constructor where available. 
+
+Fields have the following actions:
+
+* **update(value)**: set the next field value
+* **updateWithEvent(event)**: set the next field value to event.target.value; useful for form / input UX
+* **setLocked(boolean)**: selectively locks the field.
+* **setShow(boolean)**: updates the show value of the field.
+
+## Form
+
+A form is a collection of fields.
+
+```javascript
+
+const form = new Form('greeks', {
+  alpha: {
+    value: 1, validator(value) {
+      if (typeof value !== 'number') throw new Error('value must be a number');
+    }
+  },
+  beta: {value: 2},
+}, (fieldValues) => {
+  return axios.post('/my/api', values);
+});
+
 ```
 
-This builds to `/dist` and runs the project in watch mode so any edits you save inside `src` causes a rebuild to `/dist`.
+Form values have the following fields: 
 
-To do a one-off build, use `npm run build` or `yarn build`.
+* **fields**: an object containing the name/value pairs for each field
+* **$isValid**: (boolean) whether any errors have been returned by the validator function; true if no validator function
+* **$error**: (var) any error returned/thrown from the validator function; falsy if no validator exists.
+* **$errorMessage**: (string | other) attempts to "unpack" the message field of $error if possible.
+* **$isLocked**: if the form has been locked.
 
-To run tests, use `npm test` or `yarn test`.
+### pairing field I/0 with a form: 
 
-## Configuration
+The easiest way to adapt UX to a form's fields is to pass through the updateFromEvent action of each field:
 
-Code quality is set up for you with `prettier`, `husky`, and `lint-staged`. Adjust the respective fields in `package.json` accordingly.
-
-### Jest
-
-Jest tests are set up to run with `npm test` or `yarn test`.
-
-### Bundle Analysis
-
-[`size-limit`](https://github.com/ai/size-limit) is set up to calculate the real cost of your library with `npm run size` and visualize the bundle with `npm run analyze`.
-
-#### Setup Files
-
-This is the folder structure we set up for you:
-
-```txt
-/src
-  index.tsx       # EDIT THIS
-/test
-  blah.test.tsx   # EDIT THIS
-.gitignore
-package.json
-README.md         # EDIT THIS
-tsconfig.json
+```jsx
+<input type="text" value={formLeaf.branch('fields.alpha').value.value} 
+       onChange={ formLeaf.branch('fields.alpha').do.updateFromEvent} />
 ```
+Its also quite easy to pass the field branch (`myForm.branch('fields.alpha')`) to a component designed to extract
+these actions/values in a general pattern. 
 
-### Rollup
+```jsx
+const BranchInput = ({branch}) => (
+      <div> 
+        <label>{branch.name}</label>
+        <input type="text" value={branch.value.value}
+               onChange={ branch.do.updateFromEvent} />
+      </div>
+)
 
-TSDX uses [Rollup](https://rollupjs.org) as a bundler and generates multiple rollup configs for various module formats and build settings. See [Optimizations](#optimizations) for details.
+const MyComponent = ({form}) => (
+  <>
+    <BranchInput branch={form.branch('fields.alpha')} />
+    <BranchInput branch={form.branch('fields.beta')} />
+  </>
+)
 
-### TypeScript
-
-`tsconfig.json` is set up to interpret `dom` and `esnext` types, as well as `react` for `jsx`. Adjust according to your needs.
-
-## Continuous Integration
-
-### GitHub Actions
-
-Two actions are added by default:
-
-- `main` which installs deps w/ cache, lints, tests, and builds on all pushes against a Node and OS matrix
-- `size` which comments cost comparison of your library on every pull request using [`size-limit`](https://github.com/ai/size-limit)
-
-## Optimizations
-
-Please see the main `tsdx` [optimizations docs](https://github.com/palmerhq/tsdx#optimizations). In particular, know that you can take advantage of development-only optimizations:
-
-```js
-// ./types/index.d.ts
-declare var __DEV__: boolean;
-
-// inside your code...
-if (__DEV__) {
-  console.log('foo');
-}
 ```
-
-You can also choose to install and use [invariant](https://github.com/palmerhq/tsdx#invariant) and [warning](https://github.com/palmerhq/tsdx#warning) functions.
-
-## Module Formats
-
-CJS, ESModules, and UMD module formats are supported.
-
-The appropriate paths are configured in `package.json` and `dist/index.js` accordingly. Please report if any issues are found.
-
-## Named Exports
-
-Per Palmer Group guidelines, [always use named exports.](https://github.com/palmerhq/typescript#exports) Code split inside your React app instead of your React library.
-
-## Including Styles
-
-There are many ways to ship styles, including with CSS-in-JS. TSDX has no opinion on this, configure how you like.
-
-For vanilla CSS, you can include it at the root directory and add it to the `files` section in your `package.json`, so that it can be imported separately by your users and run through their bundler's loader.
-
-## Publishing to NPM
-
-We recommend using [np](https://github.com/sindresorhus/np).

@@ -1,6 +1,11 @@
 import { ForestField } from '../src';
 const thrower = () => {
-  throw new Error('vey');
+  throw new Error('Always Fails');
+};
+
+const isNotBob = value => {
+  if (value !== 'Bob') return 'you are not bob';
+  return null;
 };
 describe('ForestIO', () => {
   describe('ForestField', () => {
@@ -19,7 +24,7 @@ describe('ForestIO', () => {
         expect(field.valueWithSelectors().touched).toBeFalsy();
       });
 
-      it('should reflect touching, even if reset to initial value', () => {
+      it('should reflect touching, even if set to initial value', () => {
         const field = new ForestField('foo', '');
 
         field.do.update('bar');
@@ -54,40 +59,73 @@ describe('ForestIO', () => {
       });
     });
 
-    describe('validator', () => {
+    describe('$isValid', () => {
       describe('validator always fails', () => {
-        describe('optional = false', () => {
-          it('should be invalid if untouched', () => {
-            const foo = new ForestField('foo', '', thrower, {
-              optional: false,
-            });
-
-            expect(foo.valueWithSelectors().$isValid).toBeFalsy();
-          });
-
-          it('should be invalid if touched', () => {
-            const foo = new ForestField('foo', '', thrower, {
-              optional: false,
-            });
-            foo.do.update('bar');
-            expect(foo.valueWithSelectors().$isValid).toBeFalsy();
-          });
+        it('should be invalid if untouched', () => {
+          const foo = new ForestField('foo', '', thrower);
+          expect(foo.valueWithSelectors().$isValid).toBeFalsy();
         });
-        describe('optional = true', () => {
-          it('should be valid if untouched', () => {
-            const foo = new ForestField('virgin', '', thrower, {
-              optional: true,
-            });
-            expect(foo.valueWithSelectors().$isValid).toBeTruthy();
-          });
 
-          it('should be invalid if touched', () => {
-            const foo = new ForestField('foo', '', thrower, {
-              optional: true,
-            });
-            foo.do.update('bar');
-            expect(foo.valueWithSelectors().$isValid).toBeFalsy();
-          });
+        it('should be invalid if touched', () => {
+          const foo = new ForestField('foo', '', thrower);
+          foo.do.update('bar');
+          expect(foo.valueWithSelectors().$isValid).toBeFalsy();
+        });
+      });
+
+      describe('validator sometimes fails', () => {
+        it('should be invalid if untouched', () => {
+          const foo = new ForestField('foo', '', isNotBob);
+          expect(foo.valueWithSelectors().$isValid).toBeFalsy();
+        });
+
+        it('should be invalid if set to wrong value', () => {
+          const foo = new ForestField('foo', '', isNotBob);
+          foo.do.update('bar');
+          expect(foo.valueWithSelectors().$isValid).toBeFalsy();
+        });
+
+        it('should be valid if correct', () => {
+          const foo = new ForestField('name', '', isNotBob);
+          foo.do.update('Bob');
+          expect(foo.valueWithSelectors().$isValid).toBeTruthy();
+        });
+      });
+    });
+    describe('$errorMessage', () => {
+      describe('validator always fails', () => {
+        it('should have error if untouched', () => {
+          const foo = new ForestField('foo', '', thrower);
+          expect(foo.valueWithSelectors().$errorMessage).toBe('Always Fails');
+        });
+
+        it('should be invalid if touched', () => {
+          const foo = new ForestField('foo', '', thrower);
+          foo.do.update('bar');
+          expect(foo.valueWithSelectors().$errorMessage).toBe('Always Fails');
+        });
+      });
+
+      describe('validator sometimes fails', () => {
+        it('should be invalid if untouched', () => {
+          const foo = new ForestField('foo', '', isNotBob);
+          expect(foo.valueWithSelectors().$errorMessage).toBe(
+            'you are not bob'
+          );
+        });
+
+        it('should be invalid if set to wrong value', () => {
+          const foo = new ForestField('foo', '', isNotBob);
+          foo.do.update('bar');
+          expect(foo.valueWithSelectors().$errorMessage).toBe(
+            'you are not bob'
+          );
+        });
+
+        it('should be valid if correct', () => {
+          const foo = new ForestField('name', '', isNotBob);
+          foo.do.update('Bob');
+          expect(foo.valueWithSelectors().$errorMessage).toBeFalsy();
         });
       });
     });
