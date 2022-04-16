@@ -45,7 +45,7 @@
     }
   ],
   "devDependencies": {
-    "@size-limit/preset-small-lib": "^7.0.8",
+    "@size-limit/preset-small-lib": "^4.0",
     "husky": "^7.0.4",
     "lodash.get": "latest",
     "size-limit": "4.0",
