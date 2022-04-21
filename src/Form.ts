@@ -17,13 +17,19 @@ interface FieldDefObj {
 
 function fieldsToChildren(fields) {
   const children = new Map();
+  if (Array.isArray(fields)) {
+    fields.forEach(def => {
+      const { name, value = '', validator = NOOP } = def;
 
-  toMap(fields).forEach((def: FieldDef, index) => {
-    const { name = index, value = '', validator = NOOP } = def;
+      children.set(name, new ForestField(name, value, validator, def));
+    });
+  } else {
+    toMap(fields).forEach((def: FieldDef, index) => {
+      const { name = index, value = '', validator = NOOP } = def;
 
-    children.set(name, new ForestField(name, value, validator, def));
-  });
-
+      children.set(name, new ForestField(name, value, validator, def));
+    });
+  }
   return children;
 }
 
