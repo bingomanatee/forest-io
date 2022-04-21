@@ -54,7 +54,7 @@
     "typescript": "^4.6.3"
   },
   "dependencies": {
-    "@wonderlandlabs/forest": "latest",
+    "@wonderlandlabs/forest": "1.0.10",
     "path.join": "^1.0.0"
   }
 }

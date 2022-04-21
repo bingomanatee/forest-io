@@ -15,16 +15,16 @@ interface FieldDefObj {
   [key: string]: FieldDef;
 }
 
-function fieldsToBranches(fields) {
-  const branches = new Map();
+function fieldsToChildren(fields) {
+  const children = new Map();
 
   toMap(fields).forEach((def: FieldDef, index) => {
     const { name = index, value = '', validator = NOOP } = def;
 
-    branches.set(name, new ForestField(name, value, validator, def));
+    children.set(name, new ForestField(name, value, validator, def));
   });
 
-  return branches;
+  return children;
 }
 
 export class Form extends Leaf {
@@ -34,13 +34,13 @@ export class Form extends Leaf {
     onSubmit: Function | null = null,
     validate: Function | null = null // any validation that cannot be achieved via individual field inspection
   ) {
-    const branches = fieldsToBranches(fields);
+    const children = fieldsToChildren(fields);
 
     const fieldsBranch = new Leaf(
       {},
       {
         name: 'fields',
-        branches,
+        children,
       }
     );
 
@@ -55,37 +55,38 @@ export class Form extends Leaf {
         setters: true,
         res: {
           part: 'form',
+          onSubmit: onSubmit,
         },
-        branches: {
+        children: {
           fields: fieldsBranch,
         },
         actions: {
           addSubForm(leaf, name, fields, onSubmit = null, validate = null) {
             const form = new Form(name, fields, onSubmit, validate);
-            leaf.branch('fields').branch(name, form);
+            leaf.child('fields').child(name, form);
             return form;
           },
           field(leaf, name) {
-            return leaf.branch('feilds').banch(name);
+            return leaf.child('feilds').banch(name);
           },
           addField(leaf, name, value, validator = undefined, def = {}) {
-            const fields = leaf.branch('fields');
-            fields.branch(name, new ForestField(name, value, validator, def));
+            const fields = leaf.child('fields');
+            fields.child(name, new ForestField(name, value, validator, def));
           },
           remField(leaf, name) {
-            leaf.branch('fields').delKeys(name);
+            leaf.child('fields').delKeys(name);
           },
           eachField(leaf, fn) {
-            const fields = leaf.branch('fields');
+            const fields = leaf.child('fields');
             Object.keys(fields.value).forEach(name => {
-              const branch = leaf.branch('fields').branch(name);
-              fn(name, branch.value, branch);
+              const child = leaf.child('fields').child(name);
+              fn(name, child.value, child);
             });
           },
           updateField(leaf, name, value) {
-            const fields = leaf.branch('fields');
+            const fields = leaf.child('fields');
             if (name in fields.value) {
-              fields.branch(name).do.update(value);
+              fields.child(name).do.update(value);
             }
           },
           update(leaf, fieldValues) {
@@ -95,9 +96,10 @@ export class Form extends Leaf {
             });
           },
           reset(leaf) {
-            leaf.do.eachField((_n, _v, branch) => {
-              branch.do.reset();
+            leaf.do.eachField((_n, _v, child) => {
+              child.do.reset();
             });
+            leaf.do.setStatus(FORM_STATE_EDITING);
           },
           submit(leaf) {
             const { fieldsObj, $isValid, status } = leaf.valueWithSelectors();
@@ -111,6 +113,7 @@ export class Form extends Leaf {
             }
 
             leaf.do.setStatus(FORM_STATE_SUBMITTING);
+            const onSubmit = leaf.res('onSubmit');
             if (onSubmit && isFn(onSubmit)) {
               return new Promise(async (done, fail) => {
                 try {
@@ -174,7 +177,7 @@ export class Form extends Leaf {
     );
 
     Object.keys(fieldsBranch.value).forEach(fieldName => {
-      const fieldBranch = fieldsBranch.branch(fieldName);
+      const fieldBranch = fieldsBranch.child(fieldName);
       fieldBranch.do.setForm(this);
     });
   }

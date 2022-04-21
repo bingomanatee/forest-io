@@ -1426,10 +1426,10 @@
     semver "^7.3.2"
     tsutils "^3.17.1"
 
-"@wonderlandlabs/forest@latest":
-  version "1.0.9"
-  resolved "https://registry.yarnpkg.com/@wonderlandlabs/forest/-/forest-1.0.9.tgz#99c7bdf56f5593d9374a9cf9ef28a74d48d871b8"
-  integrity sha512-+2ej1r5gGUCWDWKMOub28HIPYc9amuF53RhQk/KDGgLhEzzY0NmeU3Mh+xIO1kZna7AEdjQUN3cL0QsThw/y6Q==
+"@wonderlandlabs/forest@1.0.10":
+  version "1.0.10"
+  resolved "https://registry.yarnpkg.com/@wonderlandlabs/forest/-/forest-1.0.10.tgz#660f06c4e41e6d5b795d0dc573aeda5af77b12a7"
+  integrity sha512-q/v3m4xr5fRxzunAujzfNDq2Ez5eLWhM80uLAAi4CdU6rDLaq7w/mM/5kqSYg6JuHXoRDbsz/omqhBDXPyX2Rw==
   dependencies:
     emitix "^2.1.0"
     immer "^9.0.12"

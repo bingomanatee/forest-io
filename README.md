@@ -1,9 +1,17 @@
-This is an ORM object based on the [@wonderlandlabs/forest](https://www.npmjs.com/package/@wonderlandlabs/forest) 
+This is an Form I/O object based on the [@wonderlandlabs/forest](https://www.npmjs.com/package/@wonderlandlabs/forest) 
 state management system. It is analogous to Formik; notable
 differences are that functionality and validation are distributed to the field objects themselves, and the functionality
 and rendering are not bound in the same solution set.
 
-Its based on @wonderlandlabs/forest, the general purpose state system.
+## The General Idea 
+
+A Form is a collection of 1 or more *fields*. Each one has a value, and tests that emit errors
+if the value is not valid. The Form instance can only be submitted when all of its fields
+are valid. 
+
+Forms are locked when the form is submitted. 
+
+
 
 ## From the bottom up: Forest-io fields
 
@@ -97,6 +105,30 @@ Forms have the following actions:
 * **addField(name, value, validator = undefined, def = {})**: adds a field to the Form definition. 
 * **remField(name)**: removes a field from the fields branch.
 * **addSubForm(name, fields, onSubmit = null, validate = null)**: adds a form to the fields' collection.
+
+### Locking Fields and Forms
+
+Individual fields can be *locked* to prevent value update from working. Additionally, 
+you can lock the entire form, preventing any of its fields from being updated. Lastly, 
+submitting a form locks it; this is a reflection of the forms' *status* property. 
+
+## form.do.submit() in detail
+
+Form status is one of the following:
+
+* `form:editing` -- unlocks fields for change
+* `form:sumbitting` -- while data is on the way
+* `form:saved` -- when the transmission has been completed
+* `form:error` -- if the transmission is unsuccessful. 
+
+calling `myForm.do.submit()` returns a promise that wraps the onSubmit function passed
+as the third argument to the Form constructor. It will get a summary of the fields' values.
+Actual REST transport of the data is the responsibility of the developer. 
+
+the onSubmit function is stored in your form instance's `res` (resource) collection. 
+If you want to stub another function into the form you can replace the handler by calling
+`myInstance.res('onSubmit', stubFunction)` - this will inject your stubFunction
+into your form instance. 
 
 ### pairing field I/0 with a form: 
 
