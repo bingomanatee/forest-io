@@ -1,5 +1,5 @@
 import { e, Leaf } from '@wonderlandlabs/forest';
-import { get as lGet } from 'lodash';
+import { get as lGet } from 'lodash-es';
 import { ABSENT, errMessage, NOOP, resultOrThrown } from './utils';
 
 class ForestField extends Leaf {
