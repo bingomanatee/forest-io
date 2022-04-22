@@ -62,6 +62,17 @@ Fields have the following actions:
 * **setShow(boolean)**: updates the show value of the field.
 * **reset(toValue?)**: resets touched; if toValue is passed, sets the fields' value to it; otherwise uses the initial value
 
+### Using $error/$errorMessage
+
+When you create a validator you have the option of either throwing an error or returning an error;
+"error" can be an Error instance or a string. In order to trap any metadata you may attach to an error,
+errors are saved in their original form in $error; `.$errorMessage` attempts to derive the `.message` field
+of any error object.
+
+That being said, before throwing `.$errorMessage` into the DOM, test it for "stringiness". Throwing
+a naked error into DOM will break your React application. If it is not a string, use a default "error"
+string in place of the returned error. 
+
 ## Form
 
 A form is a collection of fields.
